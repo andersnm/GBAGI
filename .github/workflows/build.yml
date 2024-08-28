@@ -1,0 +1,19 @@
+name: Build
+on: [push]
+
+jobs:
+  Build:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: apt-get update && apt-get install gcc-arm-none-eabi -y
+      - run: arm-none-eabi-as -o crt0.o crt0.s
+      - run: arm-none-eabi-gcc -mthumb-interwork -mthumb -x c -mcpu=arm7tdmi -c main.c agimain.c gamedata.c input.c keyboard.c invobj.c logic.c picture.c screen.c status.c variables.c views.c system.c commands.c cmdagi.c cmdtest.c errmsg.c text.c menu.c wingui.c parse.c saverestore.c interrupts.c
+      - run: arm-none-eabi-gcc -mthumb-interwork -mthumb -mcpu=arm7tdmi -nostartfiles -Tlnkscript -Wl,--orphan-handling=error -lc --specs=nosys.specs crt0.o main.o agimain.o gamedata.o input.o keyboard.o invobj.o logic.o picture.o screen.o status.o variables.o views.o system.o commands.o cmdagi.o cmdtest.o errmsg.o text.o menu.o wingui.o parse.o saverestore.o interrupts.o
+      - run: arm-none-eabi-objcopy -O binary a.out gbagi.bin
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gbagi
+          path: gbagi.bin

@@ -15,7 +15,28 @@ __intr_vect_offset = __intr_vector_buf - __sp_usr;
 
 SECTIONS
 {
-  .text __text_start :
+  . = __text_start;
+
+  .rel.plt :
+  {
+    *(.rel.plt)
+    PROVIDE_HIDDEN (__rel_iplt_start = .);
+    *(.rel.iplt)
+    PROVIDE_HIDDEN (__rel_iplt_end = .);
+  }
+
+  .init :
+  {
+    KEEP (*(SORT_NONE(.init)))
+  }
+
+  .plt :
+  {
+    *(.plt) *(.plt.*) *(.iplt) *(.igot .igot.plt)
+    . = ALIGN(4);   /* REQUIRED. LD is flaky without it. */
+  }
+
+  .text :
   {
     *(EXCLUDE_FILE (*text.iwram*) .text)
     *(.text.*)
@@ -24,9 +45,17 @@ SECTIONS
     *(.gnu.linkonce.t*)
     *(.glue_7)
     *(.glue_7t)
+    *(.v4_bx)
+    *(.vfp11_veneer)
     . = ALIGN(4);
   } = 0xff
   __text_end = .;
+
+  .fini :
+  {
+    KEEP (*(.fini))
+    . = ALIGN(4);  /* REQUIRED. LD is flaky without it. */
+  }
 
   .rodata :
   {
@@ -39,6 +68,11 @@ SECTIONS
     . = ALIGN(4);
   } = 0xff
 
+  .ARM.extab   : { *(.ARM.extab* .gnu.linkonce.armextab.*) }
+  __exidx_start = .;
+  .ARM.exidx   : { *(.ARM.exidx* .gnu.linkonce.armexidx.*) }
+  __exidx_end = .; 
+
   .ctors :
   {
     KEEP (*crtbegin.o(.ctors))
@@ -47,7 +81,6 @@ SECTIONS
     KEEP (*(.ctors))
     . = ALIGN(4);
   } = 0
-  laddr = ADDR(.text) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ctors);
 
   .dtors :
   {
@@ -57,7 +90,6 @@ SECTIONS
     KEEP (*(.dtors))
     . = ALIGN(4);
   } = 0
-  laddr = ADDR(.text) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ctors) + SIZEOF(.dtors);
 
   .eh_frame :
   {
@@ -70,7 +102,11 @@ SECTIONS
     *(.gcc_except_table)
     . = ALIGN(4);
   } = 0
-  __iwram_lma = (ADDR(.text) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ctors) + SIZEOF(.dtors) + SIZEOF(.eh_frame) + SIZEOF(.gcc_except_table) + 3) & ~ 3;
+
+  /* The rest of the sections are mapped to other memory regions but should be placed after the "normal" regions in the exe */
+  /* -> xxx_lma = where exe loader puts the section */
+  /* -> xxx_start = where crt0 puts the section before it is accessed by user code */
+  __iwram_lma = . ;
 
   .iwram __iwram_start : AT (__iwram_lma)
   {
@@ -79,22 +115,24 @@ SECTIONS
     *iwram.*(.text)
     . = ALIGN(4);
   } = 0xff
-  __data_lma = ADDR(.text) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ctors) + SIZEOF(.dtors) + SIZEOF(.eh_frame) + SIZEOF(.gcc_except_table) + SIZEOF(.iwram);
 
   __iwram_end = . ;
 
-  .bss ALIGN(4) :
+  .bss ALIGN(4) (NOLOAD) :
   {
    __bss_start = ABSOLUTE(.);
    __bss_start__ = ABSOLUTE(.);
    *(.dynbss)
    *(.gnu.linkonce.b*)
+   *(.bss*) 
    *(COMMON)
    . = ALIGN(4);
   }
 
   __bss_end = . ;
   __bss_end__ = . ;
+
+  __data_lma = __iwram_lma + SIZEOF(.iwram);
 
   .data ALIGN(4) : AT (__data_lma)
   {
@@ -105,11 +143,12 @@ SECTIONS
     CONSTRUCTORS
     . = ALIGN(4);
   } = 0xff
-  __iwram_overlay_lma = ADDR(.text) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ctors) + SIZEOF(.dtors) + SIZEOF(.eh_frame) + SIZEOF(.gcc_except_table) + SIZEOF(.iwram) + SIZEOF(.data);
 
   __data_end  =  .;
   PROVIDE (edata = .);
+
   __iwram_overlay_start = . ;
+  __iwram_overlay_lma = __data_lma + SIZEOF(.data);
 
   OVERLAY : NOCROSSREFS AT (__iwram_overlay_lma)
   {
@@ -124,22 +163,22 @@ SECTIONS
      .iwram8 { *(.iwram8) . = ALIGN(4);}
      .iwram9 { *(.iwram9) . = ALIGN(4);}
   } = 0xff
-  __ewram_lma = ADDR(.text) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ctors) + SIZEOF(.dtors) + SIZEOF(.eh_frame) + SIZEOF(.gcc_except_table) + SIZEOF(.iwram) + SIZEOF(.data) + SIZEOF(.iwram0)+SIZEOF(.iwram1)+SIZEOF(.iwram2)+SIZEOF(.iwram3)+SIZEOF(.iwram4)+SIZEOF(.iwram5)+SIZEOF(.iwram6)+SIZEOF(.iwram7)+SIZEOF(.iwram8)+SIZEOF(.iwram9);
 
   __iwram_overlay_end = . ;
   __iheap_start = . ;
 
   __ewram_start = DEFINED (__gba_multiboot) ? __ewram_lma : 0x2000000;
+  __ewram_lma = __iwram_overlay_lma + SIZEOF(.iwram0)+SIZEOF(.iwram1)+SIZEOF(.iwram2)+SIZEOF(.iwram3)+SIZEOF(.iwram4)+SIZEOF(.iwram5)+SIZEOF(.iwram6)+SIZEOF(.iwram7)+SIZEOF(.iwram8)+SIZEOF(.iwram9);
 
   .ewram __ewram_start : AT (__ewram_lma)
   {
     *(.ewram)
     . = ALIGN(4);  /* REQUIRED. LD is flaky without it. */
   } = 0xff
-  __ewram_overlay_lma = ADDR(.text) + SIZEOF(.text) + SIZEOF(.rodata) + SIZEOF(.ctors) + SIZEOF(.dtors) + SIZEOF(.eh_frame) + SIZEOF(.gcc_except_table) + SIZEOF(.iwram) + SIZEOF(.data) + SIZEOF(.iwram0)+SIZEOF(.iwram1)+SIZEOF(.iwram2)+SIZEOF(.iwram3)+SIZEOF(.iwram4)+SIZEOF(.iwram5)+SIZEOF(.iwram6)+SIZEOF(.iwram7)+SIZEOF(.iwram8)+SIZEOF(.iwram9) + SIZEOF(.ewram);
 
   __ewram_end = . ;
   __ewram_overlay_start = . ;
+  __ewram_overlay_lma = __ewram_lma + SIZEOF(.ewram);
 
   OVERLAY ALIGN(4): NOCROSSREFS AT (__ewram_overlay_lma)
   {
@@ -187,5 +226,11 @@ SECTIONS
   .debug_funcnames 0 : { *(.debug_funcnames) }
   .debug_typenames 0 : { *(.debug_typenames) }
   .debug_varnames  0 : { *(.debug_varnames) }
+  .debug_line_str  0 : { *(.debug_line_str) }
+  .debug_ranges  0 : { *(.debug_ranges) }
+  .debug_loclists  0 : { *(.debug_loclists) }
+  .debug_rnglists  0 : { *(.debug_rnglists) }
   .stack 0x80000 : { _stack = .; *(.stack) }
+  .ARM.attributes 0 : { KEEP (*(.ARM.attributes)) }
+  /DISCARD/ : { *(.note.GNU-stack) }
 }
