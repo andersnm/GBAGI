@@ -19,6 +19,9 @@
     <Filter Include="Source Files\vcl-shim">
       <UniqueIdentifier>{84e53d53-8dfd-44f1-aa70-0b90db2c8f17}</UniqueIdentifier>
     </Filter>
+    <Filter Include="romlib">
+      <UniqueIdentifier>{c373d143-a780-4d45-a302-59edf233b3be}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">
@@ -30,12 +33,6 @@
     <ClCompile Include="addgame.form.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="commands.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="decompress.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="dirdialog.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -43,12 +40,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="main.form.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="makerom.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="verdef.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="vcl-shim\Form.cpp">
@@ -59,6 +50,18 @@
     </ClCompile>
     <ClCompile Include="vcl-shim\VclString.cpp">
       <Filter>Source Files\vcl-shim</Filter>
+    </ClCompile>
+    <ClCompile Include="..\romlib\commands.cpp">
+      <Filter>romlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\romlib\decompress.cpp">
+      <Filter>romlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\romlib\util.cpp">
+      <Filter>romlib</Filter>
+    </ClCompile>
+    <ClCompile Include="..\romlib\verdef.cpp">
+      <Filter>romlib</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -83,15 +86,6 @@
     <ClInclude Include="main.res.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="makerom.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="verdef.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="vcl-shim\ComboBox.h">
       <Filter>Header Files\vcl-shim</Filter>
     </ClInclude>
@@ -109,6 +103,42 @@
     </ClInclude>
     <ClInclude Include="vcl-shim\VclString.h">
       <Filter>Header Files\vcl-shim</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\agi_autodetector.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\agi_parser.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\commands.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\decompress.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\dir_parser.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\gbagi_writer.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\logic_parser.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\object_parser.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\romlib.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\vector_reader.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\words_parser.h">
+      <Filter>romlib</Filter>
+    </ClInclude>
+    <ClInclude Include="..\romlib\words_util.h">
+      <Filter>romlib</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

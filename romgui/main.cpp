@@ -25,6 +25,11 @@
 
 #include "main.h"
 #include "addgame.h"
+#include "../romlib/gbagi_writer.h"
+
+#define AGI_DATA_ALIGNMENT 0x400
+#define BASE800	0x08000000
+
 //---------------------------------------------------------------------------
 #pragma package(smart_init)
 #pragma resource "*.dfm"
@@ -48,9 +53,6 @@ __fastcall TFormMain::TFormMain(TComponent* Owner)
     tbOutput->Text	= ProgramDir+_T("\\agigames.gba");
 
 	DirDialog = new TDirDialog;
-
-    addGameFirst	=
-    addGamePtr 		= NULL;
 
 	FormResize(this);
     UpdateControls();
@@ -103,24 +105,33 @@ void __fastcall TFormMain::btnAddClick(TObject *Sender)
     }
 	DirDialog->InitialDir = DirDialog->FullPath;
 
+	std::string gamePath = T2U(DirDialog->FullPath);
+
+	std::string gameName = gamePath;
+	while (ends_with(gameName, "/") || ends_with(gameName, "\\")) {
+		gameName.erase(gameName.size() - 1);
+	}
+
+	size_t ls = gameName.find_last_of("/\\");
+	if (ls != std::string::npos) {
+		gameName.erase(0, ls + 1);
+	}
+
     TFormAddGame *ag = new TFormAddGame(this);
-    ag->SetUp(DirDialog->FullPath);
+	if (!ag->gameinfo.load_game(gamePath, gameName)) {
+		// failed auto-detect, will never build - 
+		delete ag;
+		return;
+	}
+
+    ag->SetUp();
     ag->ShowModal();
 
     if(ag->okClose) {
-    	TAddGameObj *go = new TAddGameObj();
-        go->prev = addGamePtr;
-        go->next = NULL;
-      	if(!addGameFirst) {
-          	addGameFirst = go;
-        }
-      	if(addGamePtr) {
-          	addGamePtr->next = go;
-        }
-        addGamePtr = go;
 
-        memcpy(&go->gameinfo,&ag->gameinfo,sizeof(go->gameinfo));
-        go->itemindex = listbox->Items->Add(go->gameinfo.title);
+		ag->gameinfo.title = T2U(ag->tbName->Text);
+		games.push_back(ag->gameinfo);
+        listbox->Items->Add(ag->gameinfo.title.c_str());
 
         UpdateControls();
     }
@@ -157,38 +168,13 @@ void __fastcall TFormMain::btnRemoveClick(TObject *Sender)
     }
 }
 //---------------------------------------------------------------------------
-TAddGameObj *TFormMain::FindAddGame(int num)
-{
- 	TAddGameObj *o = addGameFirst;
-    while(o) {
-     	if(!num--)
-        	break;
-        o = o->next;
-    }
-    return o;
-}
-//---------------------------------------------------------------------------
 int TFormMain::RemoveAddGame(int num)
 {
-	TAddGameObj *o = FindAddGame(num);
+	if (num >= games.size()) {
+		return -1;
+	}
 
-    if(o==NULL) return -1;
-
-    if(o->prev)
-    	o->prev->next = o->next;
-    if(o->next)
-    	o->next->prev = o->prev;
-    if(o == addGameFirst)
-    	addGameFirst = o->next;
-    if(o == addGamePtr)
-    	addGamePtr = o->next?o->next:o->prev;
-
-
-    free((void*) o->gameinfo.title );
-    free((void*) o->gameinfo.path );
-
-    delete o;
-
+	games.erase(games.begin() + num);
     UpdateControls();
 
     return 0;
@@ -198,84 +184,44 @@ void TFormMain::RemoveAddGames()
 {
 	while(RemoveAddGame(0) != -1)
         listbox->Items->Delete(0);
-    addGameFirst	=
-    addGamePtr 		= NULL;
+	games.clear();
 }
 //---------------------------------------------------------------------------
+
 BOOL TFormMain::PackGames()
 {
-	int i, l;
-	FILE *fin;
-
-	int totalGames = listbox->Items->Count;
-
-	inromName	= _tcsdup(tbInput->Text.c_str());
-	outromName	= _tcsdup(tbOutput->Text.c_str());
-	vocabName	= _tcsdup(tbVocab->Text.c_str());
-
-	if(FileExists(vocabName) == false || (fin=_tfopen(vocabName,_T("rb")))==NULL) {
- 		ShowMessage(_T("Error opening vocab definition file! Please specify the location of the file included with this program by clicking on the \"Browse...\" button."));
+	std::vector<word_t> vocab_words;
+	words_parser vwp(vocab_words);
+	if (!vwp.load_vocab(T2U(tbVocab->Text))) {
+		ShowMessage(_T("Error opening vocab definition file! Please specify the location of the file included with this program by clicking on the \"Browse...\" button."));
 		return FALSE;
 	}
-	fclose(fin);
-	if(FileExists(inromName) == false || (fin=_tfopen(inromName,_T("rb")))==NULL) {
- 		ShowMessage(_T("Error opening input rom! Please specify the location of the file included with this program by clicking on the \"Browse...\" button."));
+
+	words_util vocab_bin(vocab_words);
+
+	std::vector<uint8_t> binary;
+	if (!read_binary(T2U(tbInput->Text), binary)) {
+		ShowMessage(_T("Error opening input rom! Please specify the location of the file included with this program by clicking on the \"Browse...\" button."));
 		return FALSE;
 	}
-	if((fout=_tfopen(outromName,_T("wb")))==NULL) {
-    	fclose(fin);
+
+	FILE* fout = _tfopen(tbOutput->Text.c_str(), _T("wb"));
+
+	if (!fout) {
  		ShowMessage(_T("Error opening file for output!"));
 		return FALSE;
 	}
 
-	fseek(fin,0,SEEK_END);
-	l=ftell(fin);
-	fseek(fin,0,SEEK_SET);
-	for(i=0;i<l;i++)
-    	fputc(fgetc(fin),fout);
-	fclose(fin);
-	S32 BASEx0X = (l + AGI_DATA_ALIGNMENT-1) & -AGI_DATA_ALIGNMENT;
-	for(i=l;i<BASEx0X;i++)
-    	fputc(0xFF,fout);
-	U32 BASE80X = BASE800 + BASEx0X;
+	uint32_t BASEx0X = (binary.size() + AGI_DATA_ALIGNMENT - 1) & -AGI_DATA_ALIGNMENT;
+	uint32_t BASE80X = BASE800 + BASEx0X;
 
-	offs = BASE80X;
+	gbagi_writer writer(fout, BASE80X);
+	writer.write_buf(binary);
 
-  	fwrite(agiid,IDSIZE,1,fout);
-	fputc(totalGames,fout);   
-	for(i=IDSIZE+1;i<0x20;i++)
-    	fputc(0,fout);
-	offs += 0x20;
+	for (size_t i = binary.size(); i < BASEx0X; i++)
+		writer.write_u8(0xFF);
 
-	giPos = ftell(fout);
-
-	for(i=totalGames*80;i>0;i--)
-    	fputc(0,fout);
-	offs += totalGames*80;
-
-	GAMEINFO ginm;
-	listbox->ItemIndex = 0;
-    TAddGameObj *gameobj = addGameFirst;
-	while(gameobj) {
-		//printf("Packing game: %s...\t\t\t",games[i].title);
-        Repaint();
-        Update();
-		ginm.path = gameobj->gameinfo.path;
-		ginm.title = gameobj->gameinfo.title;
-		ginm.version = gameobj->gameinfo.version;
-		ginm.vID = gameobj->gameinfo.vID;
-		txStatus->Caption = _T("Adding Game: ")+VclString(gameobj->gameinfo.title);
-		if(!ProcessGame(&ginm)) {
-    		FreeGame();
-    		fclose(fout);
-			ShowMessage(_T("Error adding game: ")+VclString(gameobj->gameinfo.title));
-			return FALSE;
-		}
-    	FreeGame();
-		if(gameobj->next)
-			listbox->ItemIndex++;
-     	gameobj = gameobj->next;
-	}
+	writer.output_games(games, vocab_bin);
 
 	fclose(fout);
 
@@ -299,9 +245,6 @@ void __fastcall TFormMain::btnBuildClick(TObject *Sender)
     		UpdateControls();
 		}
 		txStatus->Caption = _T("");
-		delete inromName;
-		delete outromName;
-		delete vocabName;
 		Enabled = true;
 	}
 	}

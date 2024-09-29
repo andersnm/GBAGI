@@ -30,6 +30,7 @@
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '11.0'">v110_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '12.0'">v120_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '14.0'">v140_xp</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)' == '16.0'">v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
@@ -39,6 +40,7 @@
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '11.0'">v110_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '12.0'">v120_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '14.0'">v140_xp</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)' == '16.0'">v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
   </PropertyGroup>
@@ -48,6 +50,7 @@
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '11.0'">v110_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '12.0'">v120_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '14.0'">v140_xp</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)' == '16.0'">v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -56,6 +59,7 @@
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '11.0'">v110_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '12.0'">v120_xp</PlatformToolset>
     <PlatformToolset Condition="'$(VisualStudioVersion)' == '14.0'">v140_xp</PlatformToolset>
+    <PlatformToolset Condition="'$(VisualStudioVersion)' == '16.0'">v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
@@ -192,21 +196,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\romlib\commands.cpp" />
+    <ClCompile Include="..\romlib\decompress.cpp" />
+    <ClCompile Include="..\romlib\util.cpp" />
+    <ClCompile Include="..\romlib\verdef.cpp" />
     <ClCompile Include="addgame.cpp" />
     <ClCompile Include="addgame.form.cpp" />
-    <ClCompile Include="commands.cpp" />
-    <ClCompile Include="decompress.cpp" />
     <ClCompile Include="dirdialog.cpp" />
     <ClCompile Include="gbinjectb.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="main.form.cpp" />
-    <ClCompile Include="makerom.cpp" />
     <ClCompile Include="vcl-shim\Form.cpp" />
     <ClCompile Include="vcl-shim\vcl-shim.cpp" />
     <ClCompile Include="vcl-shim\VclString.cpp" />
-    <ClCompile Include="verdef.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\romlib\agi_autodetector.h" />
+    <ClInclude Include="..\romlib\agi_parser.h" />
+    <ClInclude Include="..\romlib\commands.h" />
+    <ClInclude Include="..\romlib\decompress.h" />
+    <ClInclude Include="..\romlib\dir_parser.h" />
+    <ClInclude Include="..\romlib\gbagi_writer.h" />
+    <ClInclude Include="..\romlib\logic_parser.h" />
+    <ClInclude Include="..\romlib\object_parser.h" />
+    <ClInclude Include="..\romlib\romlib.h" />
+    <ClInclude Include="..\romlib\vector_reader.h" />
+    <ClInclude Include="..\romlib\words_parser.h" />
+    <ClInclude Include="..\romlib\words_util.h" />
     <ClInclude Include="addgame.h" />
     <ClInclude Include="addgame.res.h" />
     <ClInclude Include="commands.h" />
@@ -214,15 +230,12 @@
     <ClInclude Include="dirdialog.h" />
     <ClInclude Include="main.h" />
     <ClInclude Include="main.res.h" />
-    <ClInclude Include="makerom.h" />
-    <ClInclude Include="resource.h" />
     <ClInclude Include="vcl-shim\VclString.h" />
     <ClInclude Include="vcl-shim\ComboBox.h" />
     <ClInclude Include="vcl-shim\Form.h" />
     <ClInclude Include="vcl-shim\ListBox.h" />
     <ClInclude Include="vcl-shim\StdCtrls.h" />
     <ClInclude Include="vcl-shim\vcl-shim.h" />
-    <ClInclude Include="verdef.h" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="addgame.rc" />

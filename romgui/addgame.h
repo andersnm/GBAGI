@@ -23,11 +23,8 @@
 #define addgameH
 //---------------------------------------------------------------------------
 #include "vcl-shim/vcl-shim.h"
+#include "../romlib/agi_parser.h"
 
-#include "makerom.h"
-#include "decompress.h"
-#include "commands.h"   
-#include "verdef.h"
 //---------------------------------------------------------------------------
 class TFormAddGame : public TForm
 {
@@ -61,7 +58,7 @@ private:	// User declarations
 public:		// User declarations
 	__fastcall TFormAddGame(TComponent* Owner);
 
-    void SetUp(VclString path);
+    void SetUp();
     
 	TCHAR *GetPathString(void);
 	TCHAR *GetPathFolderName(void);
@@ -70,7 +67,7 @@ public:		// User declarations
 
 
     BOOL okClose;
-    GAMEINFO gameinfo;
+    agi_parser gameinfo;
 };
 //---------------------------------------------------------------------------
 #endif

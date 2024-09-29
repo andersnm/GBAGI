@@ -25,18 +25,8 @@
 #include "vcl-shim/vcl-shim.h"
  
 #include "dirdialog.h"
-#include "makerom.h"
-#include "decompress.h"
-#include "commands.h"
-#include "verdef.h"
-//---------------------------------------------------------------------------
-class TAddGameObj
-{
-public:
-	TAddGameObj *prev,*next;
-    GAMEINFO gameinfo;
-    int itemindex;
-};
+#include "../romlib/agi_parser.h"
+
 //---------------------------------------------------------------------------
 class TFormMain : public TForm
 {
@@ -100,13 +90,12 @@ public:		// User declarations
     void __fastcall UpdateControls();
     BOOL PackGames();
 
-    TAddGameObj *FindAddGame(int num);
     int RemoveAddGame(int num);
     void RemoveAddGames();
 
     TDirDialog *DirDialog;
 
-    TAddGameObj *addGameFirst,*addGamePtr;
+	std::vector<agi_parser> games;
 	TCHAR szPath[4096];
 
     VclString ProgramDir;

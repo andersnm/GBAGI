@@ -44,9 +44,6 @@ __fastcall TFormAddGame::TFormAddGame(TComponent* Owner)
 //---------------------------------------------------------------------------
 void TFormAddGame::UpdateControls()
 {
-	tbId->Enabled = (dropVersion->ItemIndex >= 3)? true : false;
-    tbId->Color = tbId->Enabled? clWindow: clBtnFace;
-
 	// Generated
 	this->Update();
 	dropGames->Update();
@@ -54,69 +51,56 @@ void TFormAddGame::UpdateControls()
 	tbId->Update();
 	tbName->Update();
 	tbPath->Update();
+	btnAutodetect->Update();
 }
 //---------------------------------------------------------------------------
-void TFormAddGame::SetUp(VclString path)
+void TFormAddGame::SetUp()
 {
-	tbPath->Text = path;
+	tbPath->Text = U2T(gameinfo.path);
+	tbName->Text = U2T(gameinfo.title);
+	tbId->Text = U2T(gameinfo.vID);
 
 	dropGames->Items->Clear();
 	dropVersion->Items->Clear();
 
-	VERLIST *vl = verlist;
-	while(vl->name) {
-		dropVersion->Items->Add((vl->name));
-		vl++;
+	std::vector<VclString> flags;
+	if ((gameinfo.flags && AMIGA) != 0) {
+		flags.push_back(_T("Amiga"));
 	}
 
-	GAMEINFO *gi = games;
-	while(gi->title) {
-		dropGames->Items->Add((gi->title));
-		gi++;
-	}
-
-	dropGames->ItemIndex	= dropGames->Items->Count-1; // "<Other>"
-	dropVersion->ItemIndex	= 1; // version 2 common
-	tbId->Enabled = false;
-
-	TCHAR *s = GetPathFolderName();
-	tbName->Text = s;
-	delete s;
-
-    UpdateControls();
-}   
-//---------------------------------------------------------------------------
-TCHAR *TFormAddGame::GetPathString()
-{
-	TCHAR *pathstr = new TCHAR[tbPath->Text.Length()+tbId->Text.Length()+32];
-	int pathlen = tbPath->Text.Length();
-
-    _tcscpy(pathstr, tbPath->Text.c_str());
-
-	if(pathlen && pathstr[pathlen-1] == '\\')
-		pathlen--;
-	pathstr[pathlen] = '\0';
-
-	return pathstr;
-}
-//---------------------------------------------------------------------------
-TCHAR *TFormAddGame::GetPathFolderName()
-{
-	TCHAR *pathstr;
-	int pathlen,i;
-
-	pathstr = GetPathString();
-	pathlen = _tcslen(pathstr);
-
-	for(i=pathlen-1; i >= 0; i--) {
-		if(pathstr[i] == '\\') {
-			_tcscpy(pathstr,pathstr+i+1);
-			break;
+	if ((gameinfo.flags && SINGLE_DIR) != 0) {
+		if ((gameinfo.flags && SINGLE_DIR_DIRS) != 0) {
+			flags.push_back(_T("Dirs"));
+		}
+		else {
+			flags.push_back(_T("Dir"));
 		}
 	}
-	if(_tcslen(pathstr)>25)
-		pathstr[25]='\0';
-	return pathstr;
+	else {
+		flags.push_back(_T("Dirfiles"));
+	}
+
+	if ((gameinfo.flags && PACKED_DIRS) != 0) {
+		flags.push_back(_T("Packed"));
+	}
+
+	VclString version;
+	for (const VclString& flag : flags) {
+		if (!version.empty()) version += _T(", ");
+		version += flag;
+	}
+
+	dropGames->Items->Add(_T("<Other>"));
+	dropVersion->Items->Add(VclString(_T("Autodetected: ")) + version);
+
+	dropGames->ItemIndex = 0;
+	dropVersion->ItemIndex	= 0;
+	tbId->Enabled = false;
+	dropGames->Enabled = false;
+	dropVersion->Enabled = false;
+	btnAutodetect->Enabled = false;
+
+	UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFormAddGame::btnCancelClick(TObject *Sender)
@@ -126,11 +110,6 @@ void __fastcall TFormAddGame::btnCancelClick(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TFormAddGame::btnOKClick(TObject *Sender)
 {
-	gameinfo.version	= &verlist[dropVersion->ItemIndex];
-	gameinfo.vID		= strdup_tchar_to_char((dropVersion->ItemIndex >= 3 )? tbId->Text.c_str():_T("")) ;
-	gameinfo.title		= strdup_tchar_to_char(tbName->Text.c_str());
-	gameinfo.path		= _tcsdup((tbPath->Text+_T("\\")).c_str());
-
 	okClose = TRUE;
 	Close();
 }
@@ -142,44 +121,9 @@ void __fastcall TFormAddGame::dropVersionChange(TObject *Sender)
 //---------------------------------------------------------------------------
 void __fastcall TFormAddGame::btnAutodetectClick(TObject *Sender)
 {
-	TCHAR *pathstr;
-
-	pathstr = GetPathString();
-	_tcscat(pathstr,_T("\\agidata.ovl"));
-
-	if(!FileExists(pathstr))
-		ShowMessage(_T("Could not find file: ")+VclString(pathstr));
-	else {
-		VERLIST *version = FindAGIVersion(pathstr);
-		if(version) {
-			TCHAR s[128];
-			_stprintf_s(s,_countof(s),_T("Found Version: %s, %d.%04X"),version->name,version->ver.major,version->ver.minor);
-			ShowMessage(
-					s,
-					_T("Version found!")
-				);
-			dropVersion->ItemIndex = version - verlist;
-		} else {
-			ShowMessage(
-					_T("Unable to find version"),
-					_T("Version not found!")
-				);
-		}
-	}
-	delete pathstr;    
-	UpdateControls();
 }
 //---------------------------------------------------------------------------
 void __fastcall TFormAddGame::dropGamesChange(TObject *Sender)
 {
-	if(dropGames->ItemIndex != -1) {
-		if(dropGames->Text != _T("<Other>")) {
-			GAMEINFO *gi 			= games+dropGames->ItemIndex;
-			tbName->Text			= gi->title;
-			tbId->Text				= gi->vID;
-			dropVersion->ItemIndex = gi->version - verlist; 
-			UpdateControls();
-		}
-	}
 }
 //---------------------------------------------------------------------------
