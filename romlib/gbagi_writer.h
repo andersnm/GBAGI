@@ -120,7 +120,7 @@ struct gbagi_writer {
 
         std::sort(out_words.begin(), out_words.end(), compare_words);
 
-        uint8_t word_char = 'a';
+        uint8_t word_char = out_words[0].token[0]; //'a';
         uint16_t words_offset = 0;
 
         int words_not_a = 0; // (NOT NEEDED)
@@ -132,7 +132,9 @@ struct gbagi_writer {
                 word_char = word.token[0];
                 write_u8(0); // terminate
                 words_not_a--; // subtract doubly counted (NOT NEEDED)
-                word_offsets[word_char - 'a'] = this->base + this->offs;
+                if (word_char >= 'a' && word_char <= 'z') {
+                    word_offsets[word_char - 'a'] = this->base + this->offs;
+                }
             }
 
             if (word_char != 'a') {
