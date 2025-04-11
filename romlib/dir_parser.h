@@ -58,10 +58,18 @@ struct dir_parser {
         uint16_t offs2 = dir_r.read_uint16();
         uint16_t offs3 = dir_r.read_uint16();
 
-        parse_dir(0, &dirbuffer[offs0], offs1 - offs0, vols, dirs[0], flags);
-        parse_dir(1, &dirbuffer[offs1], offs2 - offs1, vols, dirs[1], flags);
-        parse_dir(2, &dirbuffer[offs2], offs3 - offs2, vols, dirs[2], flags);
-        parse_dir(3, &dirbuffer[offs3], dirbuffer.size() - offs3, vols, dirs[3], flags);
+        if (!parse_dir(0, &dirbuffer[offs0], offs1 - offs0, vols, dirs[0], flags)) {
+            return false;
+        }
+        if (!parse_dir(1, &dirbuffer[offs1], offs2 - offs1, vols, dirs[1], flags)) {
+            return false;
+        }
+        if (!parse_dir(2, &dirbuffer[offs2], offs3 - offs2, vols, dirs[2], flags)) {
+            return false;
+        }
+        if (!parse_dir(3, &dirbuffer[offs3], dirbuffer.size() - offs3, vols, dirs[3], flags)) {
+            return false;
+        }
 
         return true;
     }
@@ -114,7 +122,9 @@ struct dir_parser {
                 ent.vol = (value >> 20) & 0xF;
 
                 parse_ent_from_vol(ent, offset, vols, packed_dirs);
-                unpack_ent(dirnum, ent);
+                if (!unpack_ent(dirnum, ent)) {
+                    return false;
+                }
             } else {
                 ent.vol = -1;
             }
@@ -168,6 +178,10 @@ struct dir_parser {
             return true;
         }
 
+        if (ent.encbuffer.size() < ent.decbuffer.size()) {
+            return false;
+        }
+
         if (ent.encbuffer.size() == ent.decbuffer.size()) { // not compressed
             if (dirnum == 0) { // logic
                 //The layout of a logic buffer goes like:
@@ -201,7 +215,7 @@ struct dir_parser {
         } else if (ent.vi & 0x80) { // compressed picture file
             PIC_expand(&ent.encbuffer[0], &ent.decbuffer[0], ent.decbuffer.size());
         } else { // compressed LZW
-            LZW_expand(&ent.encbuffer[0], &ent.decbuffer[0], ent.decbuffer.size());
+            return LZW_expand(&ent.encbuffer[0], &ent.decbuffer[0], ent.decbuffer.size());
         }
 
         return true;

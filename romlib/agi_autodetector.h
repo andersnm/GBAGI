@@ -52,50 +52,18 @@ struct agi_autodetector {
         }
     }
 
-    bool check_vol(std::vector<uint8_t>& data, bool with_enclen) {
-        // Reads two entries from a .vol file and returns true if the header magic matches on both blocks
-        // NOTE: strictly vol files can have holes/padding, so this is no guarantee, but in practise it works
-        size_t offset = 0;
-        vector_reader vol_r(data);
-        for (int i = 0; i < 2; i++) {
-            uint16_t header = vol_r.read_uint16();
-            if (header != 0x3412) {
-                // next header didnt match
-                return false;
-            }
-
-            vol_r.read_uint8();
-
-            uint16_t declen = vol_r.read_uint16();
-
-            // skip header with or without enclen field, plus declen bytes, next header should be 0x3412
-            if (with_enclen) {
-                uint16_t enclen = vol_r.read_uint16(); 
-                vol_r.skip(enclen);
-            }
-            else {
-                vol_r.skip(declen);
-            }
-        }
-
-        return true;
-    }
-
     bool autodetect_packed_dir(const std::string& path, const std::string& prefix, uint32_t& flags) {
-        std::vector<uint8_t> data;
-        if (!read_binary(path + prefix + "vol.0", data)) {
-            return false;
-        }
+        // Try unpack all dirs and vols. Assume no packing if unpacking fails.
 
-        if (check_vol(data, false)) {
-            return true;
-        }
-        else if (check_vol(data, true)) {
+        std::array<dir_info_t, 4> dirs;
+        dir_parser dp(path, prefix);
+
+        if (dp.load_dir(dirs, flags | PACKED_DIRS)) {
             flags |= PACKED_DIRS;
             return true;
         }
 
-        return false;
+        return true;
     }
 
     bool autodetect_flags(const std::string& path, uint32_t& flags, std::string& prefix) {
