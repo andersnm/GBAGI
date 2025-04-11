@@ -58,18 +58,19 @@ void TFormAddGame::SetUp()
 {
 	tbPath->Text = U2T(gameinfo.path);
 	tbName->Text = U2T(gameinfo.title);
+	::SendMessage(tbName->hWnd, EM_SETLIMITTEXT, 25, 0);
 	tbId->Text = U2T(gameinfo.vID);
 
 	dropGames->Items->Clear();
 	dropVersion->Items->Clear();
 
 	std::vector<VclString> flags;
-	if ((gameinfo.flags && AMIGA) != 0) {
+	if ((gameinfo.flags & AMIGA) != 0) {
 		flags.push_back(_T("Amiga"));
 	}
 
-	if ((gameinfo.flags && SINGLE_DIR) != 0) {
-		if ((gameinfo.flags && SINGLE_DIR_DIRS) != 0) {
+	if ((gameinfo.flags & SINGLE_DIR) != 0) {
+		if ((gameinfo.flags & SINGLE_DIR_DIRS) != 0) {
 			flags.push_back(_T("Dirs"));
 		}
 		else {
@@ -80,7 +81,7 @@ void TFormAddGame::SetUp()
 		flags.push_back(_T("Dirfiles"));
 	}
 
-	if ((gameinfo.flags && PACKED_DIRS) != 0) {
+	if ((gameinfo.flags & PACKED_DIRS) != 0) {
 		flags.push_back(_T("Packed"));
 	}
 
